@@ -3,6 +3,11 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torchvision
 from torchvision import transforms
+import wandb
+import os
+
+
+wandb.init(project="FashionMNIST", entity="${YOUR_WANDB_USER}")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -89,6 +94,7 @@ predictions_list = []
 labels_list = []
 
 for epoch in range(num_epochs):
+    train_losses = []
     for images, labels in train_loader:
         # Transfering images and labels to GPU if available
         images, labels = images.to(device), labels.to(device)
@@ -99,6 +105,7 @@ for epoch in range(num_epochs):
         # Forward pass
         outputs = model(train)
         loss = error(outputs, labels)
+        train_losses.append(loss.item())
 
         # Initializing a gradient as 0 so there is no mixing of gradient among the batches
         optimizer.zero_grad()
@@ -116,6 +123,7 @@ for epoch in range(num_epochs):
         if not (count % 50):    # It's same as "if count % 50 == 0"
             total = 0
             correct = 0
+            
 
             for images, labels in test_loader:
                 images, labels = images.to(device), labels.to(device)
@@ -136,5 +144,8 @@ for epoch in range(num_epochs):
             iteration_list.append(count)
             accuracy_list.append(accuracy)
 
-        if not (count % 500):
             print("Iteration: {}, Loss: {}, Accuracy: {}%".format(count, loss.data, accuracy))
+            # wandb.log("train_loss": loss_list, "validation_accuracy": accuracy)
+            wandb.log({"train_loss": loss.data,
+                       "validation_accuracy": accuracy
+                       })
