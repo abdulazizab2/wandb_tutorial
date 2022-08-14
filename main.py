@@ -5,9 +5,15 @@ import torchvision
 from torchvision import transforms
 import wandb
 import os
+import argparse
 
+parser = argparse.ArgumentParser(description="wandb tutorial")
+parser.add_argument("--wandb_user", type=str, required=True, help="wandb user name or team name")
+parser.add_argument("--out_channels_layer1", type=int, default=32, help="out channels for layer")
+parser.add_argument("--learning_rate", type=float, default=0.001, help="Learning rate")
+args = parser.parse_args()
 
-wandb.init(project="FashionMNIST", entity="${YOUR_WANDB_USER}")
+wandb.init(project="FashionMNIST", entity=args.wandb_user)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -40,24 +46,24 @@ def output_label(label):
 
 class FashionCNN(nn.Module):
 
-    def __init__(self):
+    def __init__(self, out_channels):
         super(FashionCNN, self).__init__()
 
         self.layer1 = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, padding=1),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(in_channels=1, out_channels=out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2)
         )
 
         self.layer2 = nn.Sequential(
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(in_channels=out_channels, out_channels=out_channels*2, kernel_size=3),
+            nn.BatchNorm2d(out_channels*2),
             nn.ReLU(),
             nn.MaxPool2d(2)
         )
 
-        self.fc1 = nn.Linear(in_features=64*6*6, out_features=600)
+        self.fc1 = nn.Linear(in_features=out_channels*2*6*6, out_features=600)
         self.drop = nn.Dropout2d(0.25)
         self.fc2 = nn.Linear(in_features=600, out_features=120)
         self.fc3 = nn.Linear(in_features=120, out_features=10)
@@ -74,15 +80,15 @@ class FashionCNN(nn.Module):
         return out
 
 
-model = FashionCNN()
+model = FashionCNN(out_channels=args.out_channels_layer1)
 model.to(device)
 
 error = nn.CrossEntropyLoss()
 
-learning_rate = 0.001
+learning_rate = args.learning_rate
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-num_epochs = 5
+num_epochs = 2
 count = 0
 # Lists for visualization of loss and accuracy
 loss_list = []
@@ -146,6 +152,5 @@ for epoch in range(num_epochs):
 
             print("Iteration: {}, Loss: {}, Accuracy: {}%".format(count, loss.data, accuracy))
             # wandb.log("train_loss": loss_list, "validation_accuracy": accuracy)
-            wandb.log({"train_loss": loss.data,
-                       "validation_accuracy": accuracy
-                       })
+            wandb.log({"train_loss": loss.data}) # you can log multiple keys in the dictionary to monitor
+            wandb.log({"val_acc": accuracy}) # since we are minimizing "val_acc" // log it alone

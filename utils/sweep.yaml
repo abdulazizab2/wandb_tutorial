@@ -1,0 +1,17 @@
+program: main.py
+method: bayes
+metric:
+  name: val_acc
+  goal: minimize
+parameters:
+  wandb_user:
+    value: abdulazizab2
+  out_channels_layer1:
+    values:
+    - 16
+    - 32
+    - 64
+  learning_rate:
+    distribution: uniform
+    min: 1e-9
+    max: 1e-5
