@@ -1,3 +1,6 @@
+# sweep quickstart: https://docs.wandb.ai/guides/sweeps/quickstart
+# sweep doc: https://docs.wandb.ai/guides/sweeps/configuration
+
 program: main.py
 method: bayes
 metric:
